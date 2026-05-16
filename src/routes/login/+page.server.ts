@@ -5,13 +5,19 @@ import { APIError } from 'better-auth/api';
 import { env } from '$env/dynamic/private';
 import { auth, AUTH_CODE_EXPIRES_IN_SECONDS } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { user } from '$lib/server/db/auth.schema';
+import { user, verification } from '$lib/server/db/auth.schema';
 import { subscriptions } from '$lib/server/db/schema';
+import { sendAuthCodeEmail } from '$lib/server/resend';
 
 function authError(error: unknown, fallback: string) {
 	if (error instanceof APIError) {
 		return error.message || fallback;
 	}
+
+	if (error instanceof Error) {
+		return error.message || fallback;
+	}
+
 	return fallback;
 }
 
@@ -49,13 +55,19 @@ export const actions: Actions = {
 		}
 
 		try {
-			await auth.api.sendVerificationOTP({
+			await db
+				.delete(verification)
+				.where(eq(verification.identifier, `sign-in-otp-${email}`));
+
+			const otp = await auth.api.createVerificationOTP({
 				body: {
 					email,
 					type: 'sign-in'
 				},
 				headers: event.request.headers
 			});
+
+			await sendAuthCodeEmail({ to: email, otp });
 		} catch (error) {
 			return fail(400, { message: authError(error, 'Could not send verification code'), email, name });
 		}

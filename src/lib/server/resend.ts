@@ -14,10 +14,18 @@ function getResend() {
 	return new Resend(env.RESEND_API_KEY);
 }
 
+function formatResendError(error: unknown) {
+	if (error && typeof error === 'object' && 'message' in error) {
+		return String(error.message);
+	}
+
+	return 'Email provider rejected the request';
+}
+
 export async function sendAuthCodeEmail({ to, otp }: { to: string; otp: string }) {
 	const resend = getResend();
 
-	await resend.emails.send({
+	const result = await resend.emails.send({
 		from: env.RESEND_FROM_EMAIL,
 		to,
 		subject: `Your PrideNPurpose sign-in code: ${otp}`,
@@ -33,6 +41,12 @@ export async function sendAuthCodeEmail({ to, otp }: { to: string; otp: string }
 </body>
 </html>`
 	});
+
+	if (result.error) {
+		throw new Error(formatResendError(result.error));
+	}
+
+	return result.data;
 }
 
 export async function sendNotificationEmail({

@@ -16,11 +16,11 @@
 			>
 				<span class="text-sm font-bold text-white">P</span>
 			</div>
-			<h1 class="text-2xl font-bold text-gray-900">Sign in</h1>
+			<h1 class="text-2xl font-bold text-gray-900">Sign in or create account</h1>
 			<p class="mt-1 text-sm text-gray-500">
 				{isVerifyStep
 					? `Enter the 6-digit code sent to ${form?.email}.`
-					: 'Use your email to get a secure verification code.'}
+					: 'Use your email to get a secure verification code. New emails are created automatically after verification.'}
 			</p>
 		</div>
 
@@ -86,7 +86,7 @@
 				</label>
 
 				<label class="block">
-					<span class="mb-1 block text-sm font-medium text-gray-700">Name</span>
+					<span class="mb-1 block text-sm font-medium text-gray-700">Name <span class="text-gray-400">(optional)</span></span>
 					<input
 						name="name"
 						value={form?.name ?? ''}
@@ -99,7 +99,7 @@
 					type="submit"
 					class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
 				>
-					Send verification code
+					Email me a code
 				</button>
 			</form>
 		{/if}
