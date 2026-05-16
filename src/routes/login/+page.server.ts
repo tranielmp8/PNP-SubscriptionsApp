@@ -1,16 +1,31 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 import { APIError } from 'better-auth/api';
+import { env } from '$env/dynamic/private';
 import { auth, AUTH_CODE_EXPIRES_IN_SECONDS } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/auth.schema';
+import { subscriptions } from '$lib/server/db/schema';
 
 function authError(error: unknown, fallback: string) {
 	if (error instanceof APIError) {
 		return error.message || fallback;
 	}
 	return fallback;
+}
+
+async function claimLegacySubscriptions(authUser: { id: string; email: string }) {
+	const legacyOwnerEmail = env.LEGACY_OWNER_EMAIL?.trim().toLowerCase();
+
+	if (!legacyOwnerEmail || authUser.email.toLowerCase() !== legacyOwnerEmail) {
+		return;
+	}
+
+	await db
+		.update(subscriptions)
+		.set({ userId: authUser.id, updatedAt: new Date() })
+		.where(isNull(subscriptions.userId));
 }
 
 export const load: PageServerLoad = (event) => {
@@ -79,6 +94,8 @@ export const actions: Actions = {
 			if (name && !result.user.name) {
 				await db.update(user).set({ name, updatedAt: new Date() }).where(eq(user.id, result.user.id));
 			}
+
+			await claimLegacySubscriptions(result.user);
 		} catch (error) {
 			return fail(400, {
 				step: 'verify',

@@ -25,6 +25,7 @@ Set these on the web app service:
 DATABASE_URL=
 ORIGIN=
 BETTER_AUTH_SECRET=
+LEGACY_OWNER_EMAIL=
 ENCRYPTION_KEY=
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
@@ -39,6 +40,8 @@ NOTIFICATION_CRON_URL=
 ```
 
 `CRON_SECRET` must be the same value on both services. `NOTIFICATION_CRON_URL` should be the public URL of the web app service, for example `https://your-app.up.railway.app`.
+
+`LEGACY_OWNER_EMAIL` is only needed if you already have subscription rows from before user accounts existed. Set it to your login email before your first login after deploying auth, then remove it after the rows are claimed.
 
 ## Database
 
