@@ -9,8 +9,14 @@ import { sendAuthCodeEmail } from '$lib/server/resend';
 
 export const AUTH_CODE_EXPIRES_IN_SECONDS = 120;
 
+const trustedOrigins = (env.BETTER_AUTH_TRUSTED_ORIGINS ?? env.ORIGIN ?? '')
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
+
 export const auth = betterAuth({
 	baseURL: env.ORIGIN,
+	trustedOrigins,
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
 	emailAndPassword: { enabled: false },

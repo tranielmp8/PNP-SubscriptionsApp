@@ -1,5 +1,10 @@
 import adapter from '@sveltejs/adapter-node';
 
+const csrfTrustedOrigins = (process.env.CSRF_TRUSTED_ORIGINS ?? process.env.ORIGIN ?? '')
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	compilerOptions: {
@@ -8,6 +13,9 @@ const config = {
 	},
 	kit: {
 		adapter: adapter(),
+		csrf: {
+			trustedOrigins: csrfTrustedOrigins
+		},
 
 		typescript: {
 			config: (config) => ({
