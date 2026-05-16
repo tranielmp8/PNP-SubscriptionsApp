@@ -19,6 +19,10 @@ export const auth = betterAuth({
 	trustedOrigins,
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
+	session: {
+		expiresIn: 60 * 60 * 24 * 10,
+		updateAge: 60 * 60 * 24
+	},
 	emailAndPassword: { enabled: false },
 	plugins: [
 		emailOTP({

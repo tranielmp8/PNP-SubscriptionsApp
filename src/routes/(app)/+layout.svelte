@@ -8,6 +8,8 @@
 		{ href: '/dashboard', label: 'Dashboard' },
 		{ href: '/subscriptions/new', label: '+ Add Subscription' }
 	];
+
+	const accountLabel = $derived(data.user.name || data.user.email);
 </script>
 
 <div class="min-h-screen bg-gray-50">
@@ -34,6 +36,12 @@
 						{link.label}
 					</a>
 				{/each}
+				<div
+					class="hidden max-w-48 truncate border-l border-gray-200 pl-3 text-sm text-gray-500 md:block"
+					title={data.user.email}
+				>
+					{accountLabel}
+				</div>
 				<form method="post" action="/logout" use:enhance>
 					<button
 						type="submit"
