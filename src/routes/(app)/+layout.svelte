@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 
 	let { children, data } = $props();
@@ -42,7 +41,7 @@
 				>
 					{accountLabel}
 				</div>
-				<form method="post" action="/logout" use:enhance>
+				<form method="post" action="/logout">
 					<button
 						type="submit"
 						class="rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"

@@ -7,5 +7,5 @@ export const POST: RequestHandler = async ({ request }) => {
 		headers: request.headers
 	});
 
-	return redirect(302, '/login');
+	redirect(303, '/login');
 };
