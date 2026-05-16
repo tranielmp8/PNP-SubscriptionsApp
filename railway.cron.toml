@@ -1,0 +1,11 @@
+# Notification cron service.
+# Railway cron schedules are UTC; this wakes up every 15 minutes so the app can
+# honor each subscription's saved local reminder time.
+[build]
+builder = "RAILPACK"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "npm run cron:notifications"
+cronSchedule = "*/15 * * * *"
+restartPolicyType = "NEVER"
