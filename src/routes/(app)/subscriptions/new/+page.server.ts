@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { subscriptions, subscriptionCredentials, notificationSettings, tags, subscriptionTags } from '$lib/server/db/schema';
+import { requireUser } from '$lib/server/auth-guard';
 import { encrypt } from '$lib/server/crypto';
 import { getTagColor } from '$lib/utils/tags';
 import { asc, eq } from 'drizzle-orm';
@@ -18,12 +19,14 @@ async function syncTags(subscriptionId: string, tagNames: string[]) {
 }
 
 export async function load({ locals }) {
+	const user = requireUser(locals);
+
 	const allTags = await db
 		.selectDistinct({ id: tags.id, name: tags.name, color: tags.color, createdAt: tags.createdAt })
 		.from(tags)
 		.innerJoin(subscriptionTags, eq(tags.id, subscriptionTags.tagId))
 		.innerJoin(subscriptions, eq(subscriptionTags.subscriptionId, subscriptions.id))
-		.where(eq(subscriptions.userId, locals.user!.id))
+		.where(eq(subscriptions.userId, user.id))
 		.orderBy(asc(tags.name));
 
 	return { allTags };
@@ -31,6 +34,7 @@ export async function load({ locals }) {
 
 export const actions = {
 	default: async ({ request, locals }) => {
+		const user = requireUser(locals);
 		const data = await request.formData();
 
 		const name = (data.get('name') as string)?.trim();
@@ -42,7 +46,7 @@ export const actions = {
 		const [sub] = await db
 			.insert(subscriptions)
 			.values({
-				userId: locals.user!.id,
+				userId: user.id,
 				name,
 				description: (data.get('description') as string)?.trim() || null,
 				amount: (data.get('amount') as string)?.trim() || null,

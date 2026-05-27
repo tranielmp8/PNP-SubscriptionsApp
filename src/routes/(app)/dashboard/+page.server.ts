@@ -1,5 +1,6 @@
 import { db } from '$lib/server/db';
 import { subscriptions } from '$lib/server/db/schema';
+import { requireUser } from '$lib/server/auth-guard';
 import { asc, eq } from 'drizzle-orm';
 
 const MONTHLY_FACTOR: Record<string, number> = {
@@ -12,8 +13,10 @@ const MONTHLY_FACTOR: Record<string, number> = {
 };
 
 export async function load({ locals }) {
+	const user = requireUser(locals);
+
 	const rows = await db.query.subscriptions.findMany({
-		where: eq(subscriptions.userId, locals.user!.id),
+		where: eq(subscriptions.userId, user.id),
 		with: {
 			credentials: { columns: { username: true, encryptedPassword: true } },
 			notificationSettings: { columns: { enabled: true } },

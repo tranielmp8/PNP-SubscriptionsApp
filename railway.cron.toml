@@ -7,5 +7,5 @@ buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm run cron:notifications"
-cronSchedule = "*/15 * * * *"
+cronSchedule = "*/30 * * * *"
 restartPolicyType = "NEVER"

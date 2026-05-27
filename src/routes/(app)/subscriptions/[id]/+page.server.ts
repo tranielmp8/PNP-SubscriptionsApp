@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import { requireUser } from '$lib/server/auth-guard';
 import {
 	subscriptions,
 	subscriptionCredentials,
@@ -27,6 +28,8 @@ function advanceDueDate(dueDate: string, billingCycle: string): string {
 }
 
 export async function load({ params, locals }) {
+	const user = requireUser(locals);
+
 	const [row] = await db
 		.select({
 			subscription: subscriptions,
@@ -36,7 +39,7 @@ export async function load({ params, locals }) {
 		.from(subscriptions)
 		.leftJoin(subscriptionCredentials, eq(subscriptions.id, subscriptionCredentials.subscriptionId))
 		.leftJoin(notificationSettings, eq(subscriptions.id, notificationSettings.subscriptionId))
-		.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+		.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 
 	if (!row) throw error(404, 'Subscription not found');
 
@@ -80,10 +83,12 @@ export async function load({ params, locals }) {
 
 export const actions = {
 	markPaid: async ({ params, locals }) => {
+		const user = requireUser(locals);
+
 		const [sub] = await db
 			.select({ dueDate: subscriptions.dueDate, billingCycle: subscriptions.billingCycle })
 			.from(subscriptions)
-			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 
 		if (!sub) return fail(404, { error: 'Not found' });
 
@@ -93,7 +98,7 @@ export const actions = {
 		await db
 			.update(subscriptions)
 			.set({ dueDate: newDueDate, updatedAt: new Date() })
-			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 
 		// Clear old notification logs so fresh reminders fire for the new cycle
 		await db
@@ -107,25 +112,29 @@ export const actions = {
 	},
 
 	toggleActive: async ({ params, locals }) => {
+		const user = requireUser(locals);
+
 		const [sub] = await db
 			.select({ isActive: subscriptions.isActive })
 			.from(subscriptions)
-			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 
 		if (!sub) return fail(404, { error: 'Not found' });
 
 		await db
 			.update(subscriptions)
 			.set({ isActive: !sub.isActive, updatedAt: new Date() })
-			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 	},
 
 	sendTestNotification: async ({ params, locals }) => {
+		const user = requireUser(locals);
+
 		const [row] = await db
 			.select({ subscription: subscriptions, notifications: notificationSettings })
 			.from(subscriptions)
 			.leftJoin(notificationSettings, eq(subscriptions.id, notificationSettings.subscriptionId))
-			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 
 		if (!row?.subscription) return fail(404, { error: 'Not found' });
 		if (!row.notifications?.recipientEmail) {
@@ -158,9 +167,11 @@ export const actions = {
 	},
 
 	delete: async ({ params, locals }) => {
+		const user = requireUser(locals);
+
 		await db
 			.delete(subscriptions)
-			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 		redirect(302, '/dashboard');
 	}
 };

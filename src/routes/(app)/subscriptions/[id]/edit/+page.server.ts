@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { subscriptions, subscriptionCredentials, notificationSettings, tags, subscriptionTags } from '$lib/server/db/schema';
+import { requireUser } from '$lib/server/auth-guard';
 import { and, asc, eq } from 'drizzle-orm';
 import { encrypt, decrypt } from '$lib/server/crypto';
 import { getTagColor } from '$lib/utils/tags';
@@ -19,12 +20,14 @@ async function syncTags(subscriptionId: string, tagNames: string[]) {
 }
 
 export async function load({ params, locals }) {
+	const user = requireUser(locals);
+
 	const [row] = await db
 		.select({ subscription: subscriptions, credentials: subscriptionCredentials, notifications: notificationSettings })
 		.from(subscriptions)
 		.leftJoin(subscriptionCredentials, eq(subscriptions.id, subscriptionCredentials.subscriptionId))
 		.leftJoin(notificationSettings, eq(subscriptions.id, notificationSettings.subscriptionId))
-		.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+		.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 
 	if (!row) throw error(404, 'Subscription not found');
 
@@ -38,7 +41,7 @@ export async function load({ params, locals }) {
 		.from(tags)
 		.innerJoin(subscriptionTags, eq(tags.id, subscriptionTags.tagId))
 		.innerJoin(subscriptions, eq(subscriptionTags.subscriptionId, subscriptions.id))
-		.where(eq(subscriptions.userId, locals.user!.id))
+		.where(eq(subscriptions.userId, user.id))
 		.orderBy(asc(tags.name));
 
 	let password = '';
@@ -57,12 +60,13 @@ export async function load({ params, locals }) {
 
 export const actions = {
 	default: async ({ params, request, locals }) => {
+		const user = requireUser(locals);
 		const data = await request.formData();
 
 		const [existing] = await db
 			.select({ id: subscriptions.id })
 			.from(subscriptions)
-			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)))
+			.where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)))
 			.limit(1);
 
 		if (!existing) return fail(404, { error: 'Not found' });
@@ -83,7 +87,7 @@ export const actions = {
 			websiteUrl: (data.get('website_url') as string)?.trim() || null,
 			category: (data.get('category') as string) || 'other',
 			updatedAt: new Date()
-		}).where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, locals.user!.id)));
+		}).where(and(eq(subscriptions.id, params.id), eq(subscriptions.userId, user.id)));
 
 		const username = (data.get('username') as string)?.trim();
 		const password = (data.get('password') as string)?.trim();
